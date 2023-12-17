@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(eXactMPC)
-add_executable(eXactMPC main.cpp)
 
-SET(CMAKE_EXE_LINKER_FLAGS 
+set(CMAKE_EXE_LINKER_FLAGS 
     "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,${CMAKE_SOURCE_DIR}/build")
 
 # for using casadi
@@ -60,9 +59,10 @@ include_directories(
 # library directories
 link_directories(${LIBRARY_DIRS})
 
-# find all the header files
-file(GLOB HEADER_FILES_HPP ${CMAKE_SOURCE_DIR}/include/*.hpp)
-file(GLOB HEADER_FILES_H ${CMAKE_SOURCE_DIR}/include/*.h)
+# find all the .cpp and .hpp files
+file(GLOB SOURCE_FILES_CPP ./*.cpp)
+file(GLOB HEADER_FILES_HPP ./*.hpp)
 
-add_library(utils utils.cpp)
-target_link_libraries(eXactMPC PUBLIC ${CASADI_LIBRARIES} utils)
+# add sources to the target and link the libraries
+add_executable(eXactMPC ${SOURCE_FILES_CPP} ${HEADER_FILES_HPP})
+target_link_libraries(eXactMPC PUBLIC ${CASADI_LIBRARIES})

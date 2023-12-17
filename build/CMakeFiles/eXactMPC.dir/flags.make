@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/xuexianlim/Desktop/eXactMPC/include -isystem /usr/include/coin -isystem /usr/local/include/casadi
 
-CXX_FLAGS = -Wall -Wextra -pthread -O3
+CXX_FLAGS = -Wall -Wextra -pthread -O3 -fPIE -std=gnu++20
 

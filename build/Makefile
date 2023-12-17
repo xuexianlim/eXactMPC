@@ -129,19 +129,6 @@ eXactMPC/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/build
 .PHONY : eXactMPC/fast
 
-#=============================================================================
-# Target rules for targets named utils
-
-# Build rule for target.
-utils: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utils
-.PHONY : utils
-
-# fast build rule for target.
-utils/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/utils.dir/build.make CMakeFiles/utils.dir/build
-.PHONY : utils/fast
-
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -171,7 +158,7 @@ utils.o: utils.cpp.o
 
 # target to build an object file
 utils.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/utils.dir/build.make CMakeFiles/utils.dir/utils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/utils.cpp.o
 .PHONY : utils.cpp.o
 
 utils.i: utils.cpp.i
@@ -179,7 +166,7 @@ utils.i: utils.cpp.i
 
 # target to preprocess a source file
 utils.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/utils.dir/build.make CMakeFiles/utils.dir/utils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/utils.cpp.i
 .PHONY : utils.cpp.i
 
 utils.s: utils.cpp.s
@@ -187,7 +174,7 @@ utils.s: utils.cpp.s
 
 # target to generate assembly for a file
 utils.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/utils.dir/build.make CMakeFiles/utils.dir/utils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/utils.cpp.s
 .PHONY : utils.cpp.s
 
 # Help Target
@@ -199,7 +186,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... eXactMPC"
-	@echo "... utils"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
