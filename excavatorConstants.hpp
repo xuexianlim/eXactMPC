@@ -10,7 +10,7 @@ using namespace casadi;
 const DM iBC = vertcat(std::vector<DM>{0.135, -0.264});
 const DM bBA = vertcat(std::vector<DM>{2.050, 0});
 const DM bBD = vertcat(std::vector<DM>{1.025, 0.278});
-const DM bBE = vertcat(std::vector<DM>{.977, 0.737});
+const DM bBE = vertcat(std::vector<DM>{0.977, 0.737});
 const DM bDA = bBA - bBD;
 const DM bAE = bBE - bBA;
 const DM bCoMBoom = vertcat(std::vector<DM>{1.025, 0.384});
@@ -23,8 +23,8 @@ const DM lenDA = norm_2(bDA);
 const DM lenAE = norm_2(bAE);
 const DM lenBCoMBoom = norm_2(bCoMBoom);
 
-const DM angABD = acos((pow(lenBA, 2) + pow(lenBD, 2) - pow(lenDA,2))/
-                        (2*lenBA*lenBD));
+const DM angABD = acos((pow(lenBA, 2) + pow(lenBD, 2) - pow(lenDA, 2)) /
+                       (2 * lenBA * lenBD));
 const DM angABCoMBoom = atan2(bCoMBoom(1), bCoMBoom(0));
 
 const DM massBoom = 227.343;
@@ -51,8 +51,8 @@ const DM lenJG = norm_2(aJG);
 const DM lenJL = norm_2(aJL);
 const DM lenACoMArm = norm_2(aCoMArm);
 
-const DM angFAL = acos((pow(lenAL, 2) + pow(lenAF, 2) - pow(lenFL, 2))/
-                        (2*lenAF*lenAL));
+const DM angFAL = acos((pow(lenAL, 2) + pow(lenAF, 2) - pow(lenFL, 2)) /
+                       (2 * lenAF * lenAL));
 const DM angLACoMArm = atan2(aCoMArm(1), aCoMArm(0));
 
 const DM massArm = 130.123;
@@ -69,8 +69,8 @@ const DM lenLM = norm_2(lLM);
 const DM lenKM = norm_2(lKM);
 const DM lenLCoMBucket = norm_2(lCoMBucket);
 
-const DM angKLM = acos((pow(lenLM, 2) + pow(lenLK, 2) - pow(lenKM, 2))/
-                        (2*lenLK*lenLM));
+const DM angKLM = acos((pow(lenLM, 2) + pow(lenLK, 2) - pow(lenKM, 2)) /
+                       (2 * lenLK * lenLM));
 const DM angMLCoMBucket = atan2(lCoMBucket(1), lCoMBucket(0));
 
 const DM massBucket = 53.000;
@@ -78,6 +78,6 @@ const DM moiBucket = 3.021;
 
 // Environment
 const DM yGround = -0.56337;
-const DM g = vertcat(std::vector<DM>{0, -9.81});
+const DM gravity = vertcat(std::vector<DM>{0, -9.81});
 
 #endif

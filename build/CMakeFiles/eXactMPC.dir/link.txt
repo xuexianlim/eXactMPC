@@ -1,1 +1,1 @@
-/usr/bin/c++ -Wall -Wextra -pthread -O3  -Wl,-rpath -Wl,/home/xuexianlim/Desktop/eXactMPC/build CMakeFiles/eXactMPC.dir/main.cpp.o CMakeFiles/eXactMPC.dir/utils.cpp.o -o eXactMPC   -L/usr/local/lib  -Wl,-rpath,/usr/local/lib /usr/local/lib/libcasadi.so 
+/usr/bin/c++ -Wall -Wextra -pthread -O3  -Wl,-rpath -Wl,/home/xuexianlim/Desktop/eXactMPC/build CMakeFiles/eXactMPC.dir/excavatorModel.cpp.o CMakeFiles/eXactMPC.dir/main.cpp.o CMakeFiles/eXactMPC.dir/utils.cpp.o -o eXactMPC   -L/usr/local/lib  -Wl,-rpath,/usr/local/lib /usr/local/lib/libcasadi.so 

@@ -5,7 +5,7 @@
 
 using namespace casadi;
 
-DM rotMat(float theta); 
+DM rotMat(float theta);
 DM transMat(float theta, DM pos);
 
 #endif
