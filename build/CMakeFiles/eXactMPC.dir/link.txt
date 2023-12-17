@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wall -Wextra -pthread -O3  -Wl,-rpath -Wl,/home/xuexianlim/Desktop/eXactMPC/build CMakeFiles/eXactMPC.dir/main.cpp.o -o eXactMPC  -Wl,-rpath,/usr/local/lib /usr/local/lib/libcasadi.so libutils.a 
