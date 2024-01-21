@@ -129,30 +129,6 @@ eXactMPC/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/build
 .PHONY : eXactMPC/fast
 
-excavatorModel.o: excavatorModel.cpp.o
-.PHONY : excavatorModel.o
-
-# target to build an object file
-excavatorModel.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/excavatorModel.cpp.o
-.PHONY : excavatorModel.cpp.o
-
-excavatorModel.i: excavatorModel.cpp.i
-.PHONY : excavatorModel.i
-
-# target to preprocess a source file
-excavatorModel.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/excavatorModel.cpp.i
-.PHONY : excavatorModel.cpp.i
-
-excavatorModel.s: excavatorModel.cpp.s
-.PHONY : excavatorModel.s
-
-# target to generate assembly for a file
-excavatorModel.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/excavatorModel.cpp.s
-.PHONY : excavatorModel.cpp.s
-
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -210,9 +186,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... eXactMPC"
-	@echo "... excavatorModel.o"
-	@echo "... excavatorModel.i"
-	@echo "... excavatorModel.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

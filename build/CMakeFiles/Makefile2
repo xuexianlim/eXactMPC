@@ -81,12 +81,12 @@ clean: CMakeFiles/eXactMPC.dir/clean
 CMakeFiles/eXactMPC.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/eXactMPC.dir/build.make CMakeFiles/eXactMPC.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xuexianlim/Desktop/eXactMPC/build/CMakeFiles --progress-num=1,2,3,4 "Built target eXactMPC"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xuexianlim/Desktop/eXactMPC/build/CMakeFiles --progress-num=1,2,3 "Built target eXactMPC"
 .PHONY : CMakeFiles/eXactMPC.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/eXactMPC.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/xuexianlim/Desktop/eXactMPC/build/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/xuexianlim/Desktop/eXactMPC/build/CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/eXactMPC.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/xuexianlim/Desktop/eXactMPC/build/CMakeFiles 0
 .PHONY : CMakeFiles/eXactMPC.dir/rule

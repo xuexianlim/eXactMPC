@@ -1,6 +1,4 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/eXactMPC.dir/excavatorModel.cpp.o"
-  "CMakeFiles/eXactMPC.dir/excavatorModel.cpp.o.d"
   "CMakeFiles/eXactMPC.dir/main.cpp.o"
   "CMakeFiles/eXactMPC.dir/main.cpp.o.d"
   "CMakeFiles/eXactMPC.dir/utils.cpp.o"
