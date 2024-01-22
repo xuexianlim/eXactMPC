@@ -49,7 +49,7 @@ int main()
 
         // Angular constraints
         opti.subject_to(x(Slice(0, 3), k + 1) <= vertcat(DMVector{1.0923, -0.5103, 0.7839}));
-        opti.subject_to(x(Slice(0, 3), k + 1) >= vertcat(MXVector{-0.4737, -2.5848, -2.8659}));
+        opti.subject_to(x(Slice(0, 3), k + 1) >= vertcat(DMVector{-0.4737, -2.5848, -2.8659}));
 
         // Angular velocity constraints
         opti.subject_to(x(Slice(3, 6), k + 1) <= vertcat(DMVector{1, 1, 1}));
@@ -62,7 +62,7 @@ int main()
         // Torque constraints
         opti.subject_to(inverseDynamics(static_cast<MX>(x(Slice(0, 3), k)),
                                         static_cast<MX>(x(Slice(3, 6), k)),
-                                        static_cast<MX>(u(all, k))) <= vertcat(MXVector{30000, 30000, 30000}));
+                                        static_cast<MX>(u(all, k))) <= vertcat(DMVector{30000, 30000, 30000}));
     }
     // Initial state
     opti.subject_to(x(all, 0) == x0);
