@@ -71,40 +71,44 @@ def actuatorLen(q):
     beta = q[1]
     gamma = q[2]
 
-    R = 2*C.lenBC
-    theta = csd.atan2(C.iBC[1], C.iBC[0])
-    lenBoom = csd.sqrt(-R*C.lenBD*csd.cos(alpha - theta + C.angABD) + C.lenBD**2 + C.lenBC**2)
+    # R = 2*C.lenBC
+    # theta = csd.atan2(C.iBC[1], C.iBC[0])
+    # lenBoom = csd.sqrt(-R*C.lenBD*csd.cos(alpha - theta + C.angABD) + C.lenBD**2 + C.lenBC**2)
+    lenBoom = 0.0086*alpha**4 - 0.0459*alpha**3 - 0.0104*alpha**2 + 0.2956*alpha + 1.042
 
-    R = 2*C.lenAE
-    theta = csd.atan2(C.bAE[0], C.bAE[1])
-    lenArm = csd.sqrt(-R*C.lenAF*csd.sin(beta + theta + C.angFAL) + C.lenAF**2 + C.lenAE**2)
+    # R = 2*C.lenAE
+    # theta = csd.atan2(C.bAE[0], C.bAE[1])
+    # lenArm = csd.sqrt(-R*C.lenAF*csd.sin(beta + theta + C.angFAL) + C.lenAF**2 + C.lenAE**2)
+    lenArm = 0.0078*beta**4 + 0.0917*beta**3 + 0.2910*beta**2 + 0.0646*beta + 1.0149
 
     lenBucket = 0.0048*gamma**4 + 0.0288*gamma**3 + 0.0225*gamma**2 - 0.1695*gamma + 0.9434
 
     return csd.vertcat(lenBoom, lenArm, lenBucket)
 
 def actuatorVel(q, qDot):
-    # alpha = q[0]
-    # beta = q[1]
+    alpha = q[0]
+    beta = q[1]
     gamma = q[2]
     alphaDot = qDot[0]
     betaDot = qDot[1]
     gammaDot = qDot[2]
     
-    len = actuatorLen(q)
-    lenBoom = len[0]
-    lenArm = len[1]
+    # len = actuatorLen(q)
+    # lenBoom = len[0]
+    # lenArm = len[1]
     # lenBucket = len[2]
 
-    angBDC = csd.acos((lenBoom**2 + C.lenBD**2 - C.lenBC**2)/(2*lenBoom*C.lenBD))
-    theta = csd.pi/2 - angBDC
-    lenBoomDot = alphaDot*C.lenBD*csd.cos(theta)
+    # angBDC = csd.acos((lenBoom**2 + C.lenBD**2 - C.lenBC**2)/(2*lenBoom*C.lenBD))
+    # theta = csd.pi/2 - angBDC
+    # lenBoomDot = alphaDot*C.lenBD*csd.cos(theta)
+    lenBoomDot = alphaDot*(0.0344*alpha**3 - 0.1377*alpha**2 - 0.0208*alpha + 0.2956)
 
-    angAFE = csd.acos((lenArm**2 + C.lenAF**2 - C.lenAE**2)/(2*lenArm*C.lenAF))
-    theta = angAFE - csd.pi/2
-    lenArmDot = -betaDot*C.lenAF*csd.cos(theta)
+    # angAFE = csd.acos((lenArm**2 + C.lenAF**2 - C.lenAE**2)/(2*lenArm*C.lenAF))
+    # theta = angAFE - csd.pi/2
+    # lenArmDot = -betaDot*C.lenAF*csd.cos(theta)
+    lenArmDot = betaDot*(0.0312*beta**3 + 0.2751*beta**2 + 0.582*beta + 0.0646)
 
-    lenBucketDot = (0.0192*gamma**3 + 0.0864*gamma**2 + 0.045*gamma - 0.1695)*gammaDot
+    lenBucketDot = gammaDot*(0.0192*gamma**3 + 0.0864*gamma**2 + 0.045*gamma - 0.1695)
     
     return csd.vertcat(lenBoomDot, lenArmDot, lenBucketDot)
 
@@ -145,7 +149,6 @@ def motorTorque(q, qDot, qDDot):
     # FBoom = TBoom*alphaDot/lenBoomDot
     # FArm = TArm*betaDot/lenArmDot
     # FBucket = TBucket*gammaDot/lenBucketDot
-
 
     TMotorBoom = TBoom*(alphaDot + 1e-9)/angVelMotorBoom
     TMotorArm = TArm*(betaDot + 1e-9)/angVelMotorArm
