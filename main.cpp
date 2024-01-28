@@ -10,6 +10,7 @@ using namespace casadi;
 float T = 5; // Time horizon
 int N = 20;  // Number of intervals
 
+// System dynamics
 template <typename V>
 V integrator(V x, V u)
 {
