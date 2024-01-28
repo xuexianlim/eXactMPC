@@ -74,14 +74,18 @@ print("==============================   x   ==============================")
 print(sol.value(x))
 print("==============================   u   ==============================")
 print(sol.value(u))
+print("==============================   loss   ==============================")
+print(sol.value(__stageLoss__))
 
-vis.graph(0, T, N, "Test", x=sol.value(x), u=sol.value(u))
-vis.graph(0, T, N, "Loss", stageLoss=sol.value(__stageLoss__))
+# vis.graph(0, T, N, "Test", x=sol.value(x), u=sol.value(u))
+# vis.graph(0, T, N, "Loss", stageLoss=sol.value(__stageLoss__))
 
-for k in range(N + 1):
-    if k == 0:
-        vis.visualise(sol.value(x[0:3, k]), None, csd.vertcat(0, -0.7, 0.3), k*T/N, k)
-    else:
-        vis.visualise(sol.value(x[0:3, k]), sol.value(x[0:3, k - 1]), csd.vertcat(0, -0.7, 0.3), k*T/N, k)
+# for k in range(N + 1):
+#     if k == 0:
+#         vis.visualise(sol.value(x[0:3, k]), None, csd.vertcat(0, -0.7, 0.3), k*T/N, k)
+#     else:
+#         vis.visualise(sol.value(x[0:3, k]), sol.value(x[0:3, k - 1]), csd.vertcat(0, -0.7, 0.3), k*T/N, k)
+
+# vis.createVideo(0,"Excavator", N/T)
 
 print("Done")

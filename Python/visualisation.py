@@ -1,6 +1,8 @@
 import casadi as csd
 import excavatorConstants as C
 import matplotlib.pyplot as plt
+import os
+import cv2
 
 plt.rcParams["figure.dpi"] = 300
 
@@ -117,10 +119,10 @@ def visualise(q, qOld, qDes, t, k):
     plt.ylim([-1.5, 3])
     ax.set_aspect('equal')
     ax.set_title("t = {t} s, k = {k}".format(t=t, k=k))
-    plt.savefig("Excavator_{y}.jpg".format(y=k))
+    plt.savefig("Plots/Excavator_{y}.jpg".format(y=k))
 
-def graph(t0, t1, N, name, **kwargs):
-    x = csd.linspace(t0, t1, N + 1)
+def graph(tStart, tEnd, N, name, **kwargs):
+    x = csd.linspace(tStart, tEnd, N + 1)
     
     fig, ax = plt.subplots()
     for label, y in kwargs.items():
@@ -137,4 +139,27 @@ def graph(t0, t1, N, name, **kwargs):
                     plt.plot(x[1:], y[row, :], label="{label}{row}".format(label=label, row=row) , linewidth=1)
     ax.legend()
     plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left')
-    plt.savefig("Graph_{name}.jpg".format(name=name), bbox_inches='tight')
+    plt.savefig("Plots/Graph_{name}.jpg".format(name=name), bbox_inches='tight')
+
+def createVideo(kStart, name, fps):
+    imgFolder = './Python/Plots'
+    videoName = "./Python/Plots/{name}.mp4".format(name=name)
+    imgs = []
+
+    k = kStart
+    while "Excavator_{k}.jpg".format(k=k) in os.listdir(imgFolder):
+        imgs += ["Excavator_{k}.jpg".format(k=k)]
+        k += 1
+    
+    frame = cv2.imread(os.path.join(imgFolder, imgs[0])) 
+    height, width, layers = frame.shape   
+  
+    video = cv2.VideoWriter(videoName, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))  
+  
+    # Appending the images to the video one by one 
+    for img in imgs:  
+        video.write(cv2.imread(os.path.join(imgFolder, img)))
+      
+    # Deallocating memories taken for window creation 
+    cv2.destroyAllWindows()  
+    video.release()  # releasing the video generated 
