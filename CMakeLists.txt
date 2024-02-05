@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(eXactMPC)
 
-set(CMAKE_EXE_LINKER_FLAGS 
+set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,${CMAKE_SOURCE_DIR}/build")
 
 # for using casadi

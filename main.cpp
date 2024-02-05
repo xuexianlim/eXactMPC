@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 #include "casadi/casadi.hpp"
 #include "excavatorModel.hpp"
 #include "excavatorConstants.hpp"
@@ -68,10 +67,18 @@ int main()
         // opti.subject_to(u(all, k) >= vertcat(DMVector{-1, -1, -1}));
 
         // Motor velocity constraints
-        opti.subject_to(motorVel(static_cast<MX>(x(Slice(0, 3), k)),
-                                 static_cast<MX>(x(Slice(3, 6), k))) <= vertcat(DMVector{235.62, 235.62, 235.62}));
-        opti.subject_to(motorVel(static_cast<MX>(x(Slice(0, 3), k)),
-                                 static_cast<MX>(x(Slice(3, 6), k))) >= vertcat(DMVector{-235.62, -235.62, -235.62}));
+        opti.subject_to(motorVel(static_cast<MX>(x(Slice(0, 3), k + 1)),
+                                 static_cast<MX>(x(Slice(3, 6), k + 1))) <= vertcat(DMVector{235.62, 235.62, 235.62}));
+        opti.subject_to(motorVel(static_cast<MX>(x(Slice(0, 3), k + 1)),
+                                 static_cast<MX>(x(Slice(3, 6), k + 1))) >= vertcat(DMVector{-235.62, -235.62, -235.62}));
+
+        // Motor torque constraints
+        // opti.subject_to(motorTorque(static_cast<MX>(x(Slice(0, 3), k)),
+        //                             static_cast<MX>(x(Slice(3, 6), k)),
+        //                             static_cast<MX>(u(all, k))) <= vertcat(DMVector{16, 16, 16}));
+        // opti.subject_to(motorTorque(static_cast<MX>(x(Slice(0, 3), k)),
+        //                             static_cast<MX>(x(Slice(3, 6), k)),
+        //                             static_cast<MX>(u(all, k))) >= vertcat(DMVector{-16, -16, -16}));
     }
 
     // Terminal cost
@@ -83,8 +90,6 @@ int main()
     opti.minimize(L);
     opti.solver("ipopt");
     OptiSol sol = opti.solve();
-    
-    std::cout << sol.value(x) << std::endl;
 
-    return 0;
+    std::cout << sol.value(x) << std::endl;
 }

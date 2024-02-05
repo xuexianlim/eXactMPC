@@ -63,7 +63,7 @@ def inverseDynamics(q, qDot, qDDot):
     g = (-csd.transpose(jacBoom[0:2, :])@C.massBoom@C.g -
          csd.transpose(jacArm[0:2, :])@C.massArm@C.g -
          csd.transpose(jacBucket[0:2, :])@C.massBucket@C.g)
-    
+
     return M@qDDot + b + g
 
 def actuatorLen(q):
@@ -85,6 +85,17 @@ def actuatorLen(q):
 
     return csd.vertcat(lenBoom, lenArm, lenBucket)
 
+def actuatorVelFactor(q):
+    alpha = q[0]
+    beta = q[1]
+    gamma = q[2]
+
+    velFactorBoom = 0.0344*alpha**3 - 0.1377*alpha**2 - 0.0208*alpha + 0.2956
+    velFactorArm = 0.0312*beta**3 + 0.2751*beta**2 + 0.582*beta + 0.0646
+    velFactorBucket = 0.0192*gamma**3 + 0.0864*gamma**2 + 0.045*gamma - 0.1695
+
+    return csd.vertcat(velFactorBoom, velFactorArm, velFactorBucket)
+
 def actuatorVel(q, qDot):
     alpha = q[0]
     beta = q[1]
@@ -92,7 +103,7 @@ def actuatorVel(q, qDot):
     alphaDot = qDot[0]
     betaDot = qDot[1]
     gammaDot = qDot[2]
-    
+
     # len = actuatorLen(q)
     # lenBoom = len[0]
     # lenArm = len[1]
@@ -109,7 +120,7 @@ def actuatorVel(q, qDot):
     lenArmDot = betaDot*(0.0312*beta**3 + 0.2751*beta**2 + 0.582*beta + 0.0646)
 
     lenBucketDot = gammaDot*(0.0192*gamma**3 + 0.0864*gamma**2 + 0.045*gamma - 0.1695)
-    
+
     return csd.vertcat(lenBoomDot, lenArmDot, lenBucketDot)
 
 def motorVel(q, qDot):
@@ -125,33 +136,18 @@ def motorVel(q, qDot):
     return csd.vertcat(angVelMotorBoom, angVelMotorArm, angVelMotorBucket)
 
 def motorTorque(q, qDot, qDDot):
-    # alpha = q[0]
-    # beta = q[1]
-    # gamma = q[2]
-    alphaDot = qDot[0]
-    betaDot = qDot[1]
-    gammaDot = qDot[2]
-
     T = inverseDynamics(q, qDot, qDDot)
     TBoom = T[0]
     TArm = T[1]
     TBucket = T[2]
 
-    lenDot = actuatorVel(q, qDot)
-    lenBoomDot = lenDot[0]
-    lenArmDot = lenDot[1]
-    lenBucketDot = lenDot[2]
+    r = actuatorVelFactor(q)
+    rBoom = r[0]
+    rArm = r[1]
+    rBucket = r[2]
 
-    angVelMotorBoom = 2444.16*lenBoomDot + 1e-9
-    angVelMotorArm = 2444.16*lenArmDot + 1e-9
-    angVelMotorBucket = 2444.16*lenBucketDot + 1e-9
-
-    # FBoom = TBoom*alphaDot/lenBoomDot
-    # FArm = TArm*betaDot/lenArmDot
-    # FBucket = TBucket*gammaDot/lenBucketDot
-
-    TMotorBoom = TBoom*(alphaDot + 1e-9)/angVelMotorBoom
-    TMotorArm = TArm*(betaDot + 1e-9)/angVelMotorArm
-    TMotorBucket = TBucket*(gammaDot + 1e-9)/angVelMotorBucket
+    TMotorBoom = TBoom/(2444.16*rBoom)
+    TMotorArm = TArm/(2444.16*rArm)
+    TMotorBucket = TBucket/(2444.16*rBucket)
 
     return csd.vertcat(TMotorBoom, TMotorArm, TMotorBucket)

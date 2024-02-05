@@ -166,4 +166,4 @@ def createVideo(kStart, kEnd, name, fps):
       
     # Deallocating memories taken for window creation 
     cv2.destroyAllWindows()  
-    video.release()  # releasing the video generated 
+    video.release()  # releasing the video generated

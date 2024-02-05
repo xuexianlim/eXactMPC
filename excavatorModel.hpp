@@ -97,6 +97,20 @@ T actuatorLen(T q)
 }
 
 template <typename T>
+T actuatorVelFactor(T q)
+{
+    T alpha = q(0);
+    T beta = q(1);
+    T gamma = q(2);
+
+    T rBoom = 0.0344 * pow(alpha, 3) - 0.1377 * pow(alpha, 2) - 0.0208 * alpha + 0.2956;
+    T rArm = 0.0312 * pow(beta, 3) + 0.2751 * pow(beta, 2) + 0.582 * beta + 0.0646;
+    T rBucket = 0.0192 * pow(gamma, 3) + 0.0864 * pow(gamma, 2) + 0.045 * gamma - 0.1695;
+
+    return vertcat(std::vector<T>{rBoom, rArm, rBucket});
+}
+
+template <typename T>
 T actuatorVel(T q, T qDot)
 {
     T alpha = q(0);
@@ -131,27 +145,19 @@ T motorVel(T q, T qDot)
 template <typename T>
 T motorTorque(T q, T qDot, T qDDot)
 {
-    T alphaDot = qDot(0);
-    T betaDot = qDot(1);
-    T gammaDot = qDot(2);    
-
     T torqueJoints = inverseDynamics(q, qDot, qDDot);
     T torqueBoom = torqueJoints(0);
     T torqueArm = torqueJoints(1);
     T torqueBucket = torqueJoints(2);
 
-    T lenDot = actuatorVel(q, qDot);
-    T lenBoomDot = lenDot(0);
-    T lenArmDot = lenDot(1);
-    T lenBucketDot = lenDot(2);
+    T r = actuatorVelFactor(q);
+    T rBoom = r(0);
+    T rArm = r(1);
+    T rBucket = r(2);
 
-    T angVelMotorBoom = 2444.16 * lenBoomDot + 1e-9;
-    T angVelMotorArm = 2444.16 * lenArmDot + 1e-9;
-    T angVelMotorBucket = 2444.16 * lenBucketDot + 1e-9;
-
-    T torqueMotorBoom = torqueBoom * (alphaDot + 1e-9) / angVelMotorBoom;
-    T torqueMotorArm = torqueArm * (betaDot + 1e-9) / angVelMotorArm;
-    T torqueMotorBucket = torqueBucket * (gammaDot + 1e-9) / angVelMotorBucket;
+    T torqueMotorBoom = torqueBoom / (2444.16 * rBoom);
+    T torqueMotorArm = torqueArm / (2444.16 * rArm);
+    T torqueMotorBucket = torqueBucket / (2444.16 * rBucket);
 
     return vertcat(std::vector<T>{torqueMotorBoom, torqueMotorArm, torqueBucket});
 }

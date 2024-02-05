@@ -1,4 +1,3 @@
-#include "casadi/casadi.hpp"
 #include "utils.hpp"
 
 using namespace casadi;
