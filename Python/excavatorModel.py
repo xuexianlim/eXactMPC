@@ -11,7 +11,29 @@ def forwardKinematics(q):
     theta = alpha + beta + gamma
     return csd.vertcat(x, y, theta)
 
-def inverseDynamics(q, qDot, qDDot):
+def inverseKinematics(pose):
+    xTip = pose[0]
+    yTip = pose[1]
+    thetaTip = pose[2]
+
+    xJointBucket = xTip - C.lenLM*csd.cos(thetaTip)
+    yJointBucket = yTip - C.lenLM*csd.sin(thetaTip)
+
+    cosBeta = (xJointBucket**2 + yJointBucket**2 - C.lenBA**2 - C.lenAL**2)/(2*C.lenBA*C.lenAL)
+    sinBeta = -csd.sqrt(1 - cosBeta**2)
+
+    print(cosBeta, sinBeta)
+
+    sinAlpha = ((C.lenBA + C.lenAL*cosBeta)*yJointBucket - C.lenAL*sinBeta*xJointBucket)/(xJointBucket**2 + yJointBucket**2)
+    cosAlpha = ((C.lenBA + C.lenAL*cosBeta)*xJointBucket + C.lenAL*sinBeta*yJointBucket)/(xJointBucket**2 + yJointBucket**2)
+
+    alpha = csd.atan2(sinAlpha, cosAlpha)
+    beta = csd.atan2(sinBeta, cosBeta)
+    gamma = thetaTip - alpha - beta
+
+    return csd.vertcat(alpha, beta, gamma)
+
+def inverseDynamics(q, qDot, qDDot, F):
     alpha = q[0]
     beta = q[1]
     gamma = q[2]
@@ -53,6 +75,13 @@ def inverseDynamics(q, qDot, qDDot):
                                            -C.lenAL*csd.sin(alpha + beta)*(alphaDot + betaDot) - C.lenLCoMBucket*csd.sin(alpha + beta + gamma + C.angMLCoMBucket)*(alphaDot + betaDot + gammaDot),
                                            -C.lenLCoMBucket*csd.sin(alpha + beta + gamma + C.angMLCoMBucket)*(alphaDot + betaDot + gammaDot)),
                                csd.horzcat(0, 0, 0))
+    jacTip = csd.vertcat(csd.horzcat(-C.lenBA*csd.sin(alpha) - C.lenAL*csd.sin(alpha + beta) - C.lenLM*csd.sin(alpha + beta + gamma),
+                                     -C.lenAL*csd.sin(alpha + beta) - C.lenLM*csd.sin(alpha + beta + gamma),
+                                     -C.lenLM*csd.sin(alpha + beta + gamma)),
+                        csd.horzcat(C.lenBA*csd.cos(alpha) + C.lenAL*csd.cos(alpha + beta) + C.lenLM*csd.cos(alpha + beta + gamma),
+                                    C.lenAL*csd.cos(alpha + beta) + C.lenLM*csd.cos(alpha + beta + gamma),
+                                    C.lenLM*csd.cos(alpha + beta + gamma)),
+                        csd.horzcat(1, 1, 1))
 
     M = (csd.transpose(jacBoom[0:2, :])@C.massBoom@jacBoom[0:2, :] + csd.transpose(jacBoom[2, :])@C.moiBoom@jacBoom[2, :] +
          csd.transpose(jacArm[0:2, :])@C.massArm@jacArm[0:2, :] + csd.transpose(jacArm[2, :])@C.moiArm@jacArm[2, :] +
@@ -63,8 +92,9 @@ def inverseDynamics(q, qDot, qDDot):
     g = (-csd.transpose(jacBoom[0:2, :])@C.massBoom@C.g -
          csd.transpose(jacArm[0:2, :])@C.massArm@C.g -
          csd.transpose(jacBucket[0:2, :])@C.massBucket@C.g)
+    extF = csd.transpose(jacTip[0:2, :])@F
 
-    return M@qDDot + b + g
+    return M@qDDot + b + g - extF
 
 def actuatorLen(q):
     alpha = q[0]
@@ -135,8 +165,8 @@ def motorVel(q, qDot):
 
     return csd.vertcat(angVelMotorBoom, angVelMotorArm, angVelMotorBucket)
 
-def motorTorque(q, qDot, qDDot):
-    T = inverseDynamics(q, qDot, qDDot)
+def motorTorque(q, qDot, qDDot, F):
+    T = inverseDynamics(q, qDot, qDDot, F)
     TBoom = T[0]
     TArm = T[1]
     TBucket = T[2]

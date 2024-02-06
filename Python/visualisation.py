@@ -21,7 +21,7 @@ def plotExcavator(ax, q, **kwargs):
     alpha = q[0]
     beta = q[1]
     gamma = q[2]
-    
+
     color = 'default'
     alphaTransparency = 0
     if 'color' in kwargs.keys():
@@ -83,7 +83,7 @@ def plotExcavator(ax, q, **kwargs):
     else:
         plt.plot([iBE[0].__float__(), iBF[0].__float__()], [iBE[1].__float__(), iBF[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)
         plt.plot([iBG[0].__float__(), iBH[0].__float__()], [iBG[1].__float__(), iBH[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)
-        plt.plot([iBJ[0].__float__(), iBH[0].__float__()], [iBJ[1].__float__(), iBH[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)        
+        plt.plot([iBJ[0].__float__(), iBH[0].__float__()], [iBJ[1].__float__(), iBH[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)
 
     # Bucket
     iBK = transMat(alpha + beta + gamma, iBL)@csd.vertcat(C.lLK, 1)
@@ -102,7 +102,7 @@ def plotExcavator(ax, q, **kwargs):
         plt.plot([iBH[0].__float__(), iBK[0].__float__()], [iBH[1].__float__(), iBK[1].__float__()], color='k', linewidth=1)
     else:
         ax.fill(xBoom, yBoom, facecolor='none', edgecolor=color, linewidth=1, alpha=alphaTransparency)
-        plt.plot([iBH[0].__float__(), iBK[0].__float__()], [iBH[1].__float__(), iBK[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)        
+        plt.plot([iBH[0].__float__(), iBK[0].__float__()], [iBH[1].__float__(), iBK[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)
 
 def visualise(q, qOld, qDes, t, k):
     fig, ax = plt.subplots()
@@ -117,7 +117,7 @@ def visualise(q, qOld, qDes, t, k):
     plt.axhline(y=C.yGround, color='g', linewidth=1)
 
     plt.xlim([-1, 4])
-    plt.ylim([-1.5, 3])
+    plt.ylim([-2, 3])
     ax.set_aspect('equal')
     ax.set_title("t = {t} s, k = {k}".format(t=t, k=k))
     plt.savefig(visFolder + "Excavator_{y}.jpg".format(y=k))
@@ -126,7 +126,7 @@ def visualise(q, qOld, qDes, t, k):
 def graph(tStart, tEnd, interval, name, **kwargs):
     n = (tEnd - tStart)/interval
     x = csd.linspace(tStart, tEnd, int(n + 1))
-    
+
     fig, ax = plt.subplots()
     for label, y in kwargs.items():
         if y.ndim == 1:
@@ -154,16 +154,16 @@ def createVideo(kStart, kEnd, name, fps):
     while "Excavator_{k}.jpg".format(k=k) in os.listdir(visFolder) and k <= kEnd:
         imgs += ["Excavator_{k}.jpg".format(k=k)]
         k += 1
-    
-    frame = cv2.imread(os.path.join(visFolder, imgs[0])) 
-    height, width, layers = frame.shape   
-  
-    video = cv2.VideoWriter(videoName, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))  
-  
-    # Appending the images to the video one by one 
-    for img in imgs:  
+
+    frame = cv2.imread(os.path.join(visFolder, imgs[0]))
+    height, width, layers = frame.shape
+
+    video = cv2.VideoWriter(videoName, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
+
+    # Appending the images to the video one by one
+    for img in imgs:
         video.write(cv2.imread(os.path.join(visFolder, img)))
-      
-    # Deallocating memories taken for window creation 
-    cv2.destroyAllWindows()  
+
+    # Deallocating memories taken for window creation
+    cv2.destroyAllWindows()
     video.release()  # releasing the video generated

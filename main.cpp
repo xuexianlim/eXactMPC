@@ -6,8 +6,8 @@
 
 using namespace casadi;
 
-float T = 4; // Time horizon
-int N = 40;  // Number of intervals
+float T = 5; // Time horizon
+int N = 50;  // Number of intervals
 
 // System dynamics
 template <typename V>
@@ -33,9 +33,14 @@ int main()
     MX x0 = opti.parameter(6, 1);
     MX poseDesired = opti.parameter(3, 1);
 
-    opti.set_value(poseDesired, vertcat(DMVector{3.37533, -0.897229, -0.4})); // Desired pose
-    opti.set_value(x0, vertcat(DMVector{1, -2.2, -1.8, 0, 0, 0}));            // Initial state
+    DM qInitial = vertcat(DMVector{1, -2.2, -1.8});
+    DM poseDesiredValue = vertcat(DMVector{3.37533, -0.897229, -0.4});
+    DM qDesired = inverseKinematics(poseDesiredValue);
 
+    opti.set_value(poseDesired, poseDesiredValue);            // Desired pose
+    opti.set_value(x0, vertcat(DMVector{qInitial, 0, 0, 0})); // Initial state
+
+    // Weights of loss terms
     MX L = 0;
     float poseAngleFactor = 0.3;
     float angVelFactor = 0.0001;
@@ -44,6 +49,12 @@ int main()
 
     for (int k = 0; k < N; k++)
     {
+        // Initial guess
+        DM qGuess = (k + 1) / N * (qDesired - qInitial) + qInitial;
+        DM qDotGuess = (qDesired - qInitial) / T;
+
+        opti.set_initial(x(all, k), vertcat(DMVector{qGuess, qDotGuess}));
+
         // Objective function
         MX poseActual = forwardKinematics(static_cast<MX>(x(all, k + 1)));
 
@@ -58,14 +69,6 @@ int main()
         opti.subject_to(x(Slice(0, 3), k + 1) <= vertcat(DMVector{1.0923, -0.5103, 0.7839}));
         opti.subject_to(x(Slice(0, 3), k + 1) >= vertcat(DMVector{-0.4737, -2.5848, -2.8659}));
 
-        // Angular velocity constraints
-        // opti.subject_to(x(Slice(3, 6), k + 1) <= vertcat(DMVector{1, 1, 1}));
-        // opti.subject_to(x(Slice(3, 6), k + 1) >= vertcat(DMVector{-1, -1, -1}));
-
-        // Angular acceleration constraints
-        // opti.subject_to(u(all, k) <= vertcat(DMVector{1, 1, 1}));
-        // opti.subject_to(u(all, k) >= vertcat(DMVector{-1, -1, -1}));
-
         // Motor velocity constraints
         opti.subject_to(motorVel(static_cast<MX>(x(Slice(0, 3), k + 1)),
                                  static_cast<MX>(x(Slice(3, 6), k + 1))) <= vertcat(DMVector{235.62, 235.62, 235.62}));
@@ -73,12 +76,14 @@ int main()
                                  static_cast<MX>(x(Slice(3, 6), k + 1))) >= vertcat(DMVector{-235.62, -235.62, -235.62}));
 
         // Motor torque constraints
-        // opti.subject_to(motorTorque(static_cast<MX>(x(Slice(0, 3), k)),
-        //                             static_cast<MX>(x(Slice(3, 6), k)),
-        //                             static_cast<MX>(u(all, k))) <= vertcat(DMVector{16, 16, 16}));
-        // opti.subject_to(motorTorque(static_cast<MX>(x(Slice(0, 3), k)),
-        //                             static_cast<MX>(x(Slice(3, 6), k)),
-        //                             static_cast<MX>(u(all, k))) >= vertcat(DMVector{-16, -16, -16}));
+        opti.subject_to(motorTorque(static_cast<MX>(x(Slice(0, 3), k)),
+                                    static_cast<MX>(x(Slice(3, 6), k)),
+                                    static_cast<MX>(u(all, k)),
+                                    vertcat(MXVector{0, 0})) <= vertcat(DMVector{16, 16, 16}));
+        opti.subject_to(motorTorque(static_cast<MX>(x(Slice(0, 3), k)),
+                                    static_cast<MX>(x(Slice(3, 6), k)),
+                                    static_cast<MX>(u(all, k)),
+                                    vertcat(MXVector{0, 0})) >= vertcat(DMVector{-16, -16, -16}));
     }
 
     // Terminal cost
@@ -91,5 +96,6 @@ int main()
     opti.solver("ipopt");
     OptiSol sol = opti.solve();
 
-    std::cout << sol.value(x) << std::endl;
+    // std::cout << sol.value(x) << std::endl;
+    // std::cout << sol.value(u) << std::endl;
 }

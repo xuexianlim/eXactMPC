@@ -22,7 +22,30 @@ T forwardKinematics(T q)
 }
 
 template <typename T>
-T inverseDynamics(T q, T qDot, T qDDot)
+T inverseKinematics(T pose)
+{
+    T xTip = pose(0);
+    T yTip = pose(1);
+    T thetaTip = pose(2);
+
+    T xJointBucket = xTip - lenLM * cos(thetaTip);
+    T yJointBucket = yTip - lenLM * sin(thetaTip);
+
+    T cosBeta = (pow(xJointBucket, 2) + pow(yJointBucket, 2) - pow(lenBA, 2) - pow(lenAL, 2)) / (2 * lenBA * lenAL);
+    T sinBeta = -sqrt(1 - pow(cosBeta, 2));
+
+    T sinAlpha = ((lenBA + lenAL * cosBeta) * yJointBucket - lenAL * sinBeta * xJointBucket) / (pow(xJointBucket, 2) + pow(yJointBucket, 2));
+    T cosAlpha = ((lenBA + lenAL * cosBeta) * xJointBucket + lenAL * sinBeta * yJointBucket) / (pow(xJointBucket, 2) + pow(yJointBucket, 2));
+
+    T alpha = atan2(sinAlpha, cosAlpha);
+    T beta = atan2(sinBeta, cosBeta);
+    T gamma = thetaTip - alpha - beta;
+
+    return vertcat(std::vector<T>{alpha, beta, gamma});
+}
+
+template <typename T>
+T inverseDynamics(T q, T qDot, T qDDot, T F)
 {
     T alpha = q(0);
     T beta = q(1);
@@ -70,6 +93,12 @@ T inverseDynamics(T q, T qDot, T qDDot)
                                                                       -lenAL * sin(alpha + beta) * (alphaDot + betaDot) - lenLCoMBucket * sin(alpha + beta + gamma + angMLCoMBucket) * (alphaDot + betaDot + gammaDot),
                                                                       -lenLCoMBucket * sin(alpha + beta + gamma + angMLCoMBucket) * (alphaDot + betaDot + gammaDot)})});
     T jacBucketDotRot = horzcat(std::vector<T>{0, 0, 0});
+    T jacTipPos = vertcat(std::vector<T>{horzcat(std::vector<T>{-lenBA * sin(alpha) - lenAL * sin(alpha + beta) - lenLM * sin(alpha + beta + gamma),
+                                                                -lenAL * sin(alpha + beta) - lenLM * sin(alpha + beta + gamma),
+                                                                -lenLM * sin(alpha + beta + gamma)}),
+                                         horzcat(std::vector<T>{lenBA * cos(alpha) + lenAL * cos(alpha + beta) + lenLM * cos(alpha + beta + gamma),
+                                                                lenAL * cos(alpha + beta) + lenLM * cos(alpha + beta + gamma),
+                                                                lenLM * cos(alpha + beta + gamma)})});
 
     T M = mtimes(jacBoomPos.T() * massBoom, jacBoomPos) + mtimes(jacBoomRot.T() * moiBoom, jacBoomRot) +
           mtimes(jacArmPos.T() * massArm, jacArmPos) + mtimes(jacArmRot.T() * moiArm, jacArmRot) +
@@ -78,8 +107,9 @@ T inverseDynamics(T q, T qDot, T qDDot)
           mtimes(jacArmPos.T() * massArm, mtimes(jacArmDotPos, qDot)) + mtimes(jacArmRot.T() * moiArm, mtimes(jacArmDotRot, qDot)) +
           mtimes(jacBucketPos.T() * massBucket, mtimes(jacBucketDotPos, qDot)) + mtimes(jacBucketRot.T() * moiBucket, mtimes(jacBucketDotRot, qDot));
     T g = -mtimes(jacBoomPos.T() * massBoom, gravity) - mtimes(jacArmPos.T() * massArm, gravity) - mtimes(jacBucketPos.T() * massBucket, gravity);
+    T extF = mtimes(jacTipPos.T(), F);
 
-    return mtimes(M, qDDot) + b + g;
+    return mtimes(M, qDDot) + b + g - extF;
 }
 
 template <typename T>
@@ -143,9 +173,9 @@ T motorVel(T q, T qDot)
 }
 
 template <typename T>
-T motorTorque(T q, T qDot, T qDDot)
+T motorTorque(T q, T qDot, T qDDot, T F)
 {
-    T torqueJoints = inverseDynamics(q, qDot, qDDot);
+    T torqueJoints = inverseDynamics(q, qDot, qDDot, F);
     T torqueBoom = torqueJoints(0);
     T torqueArm = torqueJoints(1);
     T torqueBucket = torqueJoints(2);
@@ -159,7 +189,7 @@ T motorTorque(T q, T qDot, T qDDot)
     T torqueMotorArm = torqueArm / (2444.16 * rArm);
     T torqueMotorBucket = torqueBucket / (2444.16 * rBucket);
 
-    return vertcat(std::vector<T>{torqueMotorBoom, torqueMotorArm, torqueBucket});
+    return vertcat(std::vector<T>{torqueMotorBoom, torqueMotorArm, torqueMotorBucket});
 }
 
 #endif

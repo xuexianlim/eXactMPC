@@ -3,8 +3,8 @@ import excavatorConstants as C
 import excavatorModel as mod
 import visualisation as vis
 
-T = 4 # Time horizon
-N = 40 # Number of time steps
+T = 5 # Time horizon
+N = 50 # Number of time steps
 
 def integrator(x, u):
     return csd.vertcat(x[0] + x[3]*T/N + 0.5*u[0]*(T/N)**2,
@@ -20,15 +20,20 @@ x = opti.variable(6, N+1)
 u = opti.variable(3, N)
 
 #__stageLoss__ = opti.variable(N)
-__motorVel__ = opti.variable(3, N)
+__motorVel__ = opti.variable(3, N+1)
 __motorTorque__ = opti.variable(3, N)
 __jointTorque__ = opti.variable(3, N)
 
 x0 = opti.parameter(6, 1)
 poseDesired = opti.parameter(3, 1)
 
-opti.set_value(poseDesired, csd.vertcat(3.37533, -0.897229, -0.4)) # Desired pose
-opti.set_value(x0, csd.vertcat(1, -2.2, -1.8, 0, 0, 0)) # Initial state
+qInitial = csd.vertcat(1, -2.2, -1.8)
+poseDesiredValue = csd.vertcat(3.37533, -0.897229, -0.4)
+
+opti.set_value(poseDesired, poseDesiredValue) # Desired pose
+opti.set_value(x0, csd.vertcat(qInitial, 0, 0, 0)) # Initial state
+
+qDesired = mod.inverseKinematics(poseDesiredValue)
 
 # Objective function
 L = 0
@@ -36,9 +41,14 @@ poseAngleFactor = 0.3
 terminalCostFactor = 1
 
 for k in range(N):
+    qGuess = (k+1)/N*(qDesired - qInitial) + qInitial
+    qDotGuess = (qDesired - qInitial)/T
+
+    opti.set_initial(x[:, k], csd.vertcat(qGuess, qDotGuess))
+
     poseActual = mod.forwardKinematics(x[:, k+1])
     L += (poseActual[0] - poseDesired[0])**2 + (poseActual[1] - poseDesired[1])**2 + poseAngleFactor*(poseActual[2] - poseDesired[2])**2
-    L += 0.0001*(x[3, k]**2 + x[4, k]**2 + x[5, k]**2) 
+    L += 0.0001*(x[3, k]**2 + x[4, k]**2 + x[5, k]**2)
     L += 0.0001*(u[0, k]**2 + u[1, k]**2 + u[2, k]**2)
 
     opti.subject_to(x[:, k+1] == integrator(x[:, k], u[:, k])) # System dynamics
@@ -46,29 +56,23 @@ for k in range(N):
     opti.subject_to(x[0:3, k+1] <= csd.vertcat(1.0923, -0.5103, 0.7839)) # Angular limits
     opti.subject_to(x[0:3, k+1] >= csd.vertcat(-0.4737, -2.5848, -2.8659))
 
-    # opti.subject_to(x[3:6, k+1] <= csd.vertcat(1, 1, 1)) # Angular velocity limits
-    # opti.subject_to(x[3:6, k+1] >= csd.vertcat(-1, -1, -1))
-
-    # opti.subject_to(u[:, k] <= csd.vertcat(20, 20, 20)) # Angular acceleration limits
-    # opti.subject_to(u[:, k] >= csd.vertcat(-20, -20, -20))
-
     opti.subject_to(mod.motorVel(x[0:3, k], x[3:6, k]) <= csd.vertcat(235.62, 235.62, 235.62)) # Motor speed
     opti.subject_to(mod.motorVel(x[0:3, k], x[3:6, k]) >= csd.vertcat(-235.62, -235.62, -235.62)) # 2250 RPM
 
-    # opti.subject_to(mod.motorTorque(x[0:3, k], x[3:6, k], u[:, k]) <= csd.vertcat(16, 16, 16)) # Motor torque limits
-    # opti.subject_to(mod.motorTorque(x[0:3, k], x[3:6, k], u[:, k]) >= csd.vertcat(-16, -16, -16))
+    opti.subject_to(mod.motorTorque(x[0:3, k], x[3:6, k], u[:, k], csd.vertcat(0, 0)) <= csd.vertcat(16, 16, 16)) # Motor torque limits
+    opti.subject_to(mod.motorTorque(x[0:3, k], x[3:6, k], u[:, k], csd.vertcat(0, 0)) >= csd.vertcat(-16, -16, -16))
 
     # For printing and viewing variables of interest
     #opti.subject_to(__stageLoss__[k] ==  (poseActual[0] - poseDesired[0])**2 + (poseActual[1] - poseDesired[1])**2 + (poseActual[2] - poseDesired[2])**2)
-    opti.subject_to(__motorVel__[:, k] == mod.motorVel(x[0:3, k], x[3:6, k]))
-    opti.subject_to(__motorTorque__[:, k] == mod.motorTorque(x[0:3, k], x[3:6, k], u[:, k]))
-    opti.subject_to(__jointTorque__[:, k] == mod.inverseDynamics(x[0:3, k], x[3:6, k], u[:, k]))
+    opti.subject_to(__motorVel__[:, k+1] == mod.motorVel(x[0:3, k+1], x[3:6, k+1]))
+    opti.subject_to(__motorTorque__[:, k] == mod.motorTorque(x[0:3, k], x[3:6, k], u[:, k], csd.vertcat(0, 0)))
+    opti.subject_to(__jointTorque__[:, k] == mod.inverseDynamics(x[0:3, k], x[3:6, k], u[:, k], csd.vertcat(0, 0)))
 
 L += terminalCostFactor*(x[3, N]**2 + x[4, N]**2 + x[5, N]**2)
 
 opti.subject_to(x[:, 0] == x0) # Initial state
 
-opts={} 
+opts={}
 # opts["verbose_init"] = False
 # opts["verbose"] = False
 # opts["print_time"] = False
@@ -77,7 +81,7 @@ opts={}
 opti.minimize(L)
 opti.solver('ipopt', opts)
 
-sol = opti.solve()
+#sol = opti.solve()
 
 # print("==============================   x   ==============================")
 # print(sol.value(x))
@@ -88,7 +92,7 @@ sol = opti.solve()
 vis.graph(0, T, T/N, "State (q)", x=sol.value(x[0:3, :]))
 vis.graph(0, T, T/N, "State (qDot)", x=sol.value(x[3:6, :]))
 vis.graph(0, T, T/N, "Input", u=sol.value(u))
-vis.graph(T/N, T, T/N, "Motor Torque", motorTorque=sol.value(__motorTorque__[:, 1:]))
+vis.graph(0, T, T/N, "Motor Torque", motorTorque=sol.value(__motorTorque__))
 vis.graph(0, T, T/N, "Motor Vel", motorVel=sol.value(__motorVel__))
 vis.graph(0, T, T/N, "Joint Torque", jointTorque=sol.value(__jointTorque__))
 
