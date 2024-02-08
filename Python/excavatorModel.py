@@ -1,4 +1,5 @@
 import casadi as csd
+from enum import Enum
 import excavatorConstants as C
 
 def forwardKinematics(q):
@@ -21,8 +22,6 @@ def inverseKinematics(pose):
 
     cosBeta = (xJointBucket**2 + yJointBucket**2 - C.lenBA**2 - C.lenAL**2)/(2*C.lenBA*C.lenAL)
     sinBeta = -csd.sqrt(1 - cosBeta**2)
-
-    print(cosBeta, sinBeta)
 
     sinAlpha = ((C.lenBA + C.lenAL*cosBeta)*yJointBucket - C.lenAL*sinBeta*xJointBucket)/(xJointBucket**2 + yJointBucket**2)
     cosAlpha = ((C.lenBA + C.lenAL*cosBeta)*xJointBucket + C.lenAL*sinBeta*yJointBucket)/(xJointBucket**2 + yJointBucket**2)
@@ -181,3 +180,22 @@ def motorTorque(q, qDot, qDDot, F):
     TMotorBucket = TBucket/(2444.16*rBucket)
 
     return csd.vertcat(TMotorBoom, TMotorArm, TMotorBucket)
+
+class DutyCycle(Enum):
+    S1 = 0
+    S2_60 = 1
+    S2_30 = 2
+    PEAK = 3
+
+def motorTorqueLimit(motorVel, dutyCycle):
+    match dutyCycle:
+        case DutyCycle.S1:
+            return -1.4073e-7*motorVel**3 + 1.7961e-5*motorVel**2 - 0.0147*motorVel + 19.9091
+        case DutyCycle.S2_60:
+            return -3.0312e-7*motorVel**3 + 1.1755e-4*motorVel**2 - 0.0255*motorVel + 25.5329
+        case DutyCycle.S2_30:
+            return -2.0433e-7*motorVel**3 + 5.1865e-5*motorVel**2 - 0.0105*motorVel + 30.9119
+        case DutyCycle.PEAK:
+            return 4.0269e-9*motorVel**4 - 3.7090e-6*motorVel**3 + 8.513e-4*motorVel**2 - 0.05787*motorVel + 60.2614
+        case _:
+            return -1.4073e-7*motorVel**3 + 1.7961e-5*motorVel**2 - 0.0147*motorVel + 19.9091

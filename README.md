@@ -15,7 +15,9 @@ $ ./eXactMPC
 ```
 
 # Python
-For the visualisation video generation, OpenCV should be installed via the following command:
+At least Python 3.10 is required to run the program due to the presence of match-case syntax.
+
+In order to generate videos from the visualisation module, OpenCV should be installed via the following command:
 ```
 $ sudo apt-get install python3-opencv
 ```

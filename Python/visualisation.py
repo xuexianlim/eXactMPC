@@ -1,5 +1,6 @@
 import casadi as csd
 import excavatorConstants as C
+from excavatorModel import DutyCycle, motorTorqueLimit
 import matplotlib.pyplot as plt
 import os
 import cv2
@@ -123,7 +124,7 @@ def visualise(q, qOld, qDes, t, k):
     plt.savefig(visFolder + "Excavator_{y}.jpg".format(y=k))
     plt.close()
 
-def graph(tStart, tEnd, interval, name, **kwargs):
+def graph(tStart, tEnd, interval, title, ylabel, **kwargs):
     n = (tEnd - tStart)/interval
     x = csd.linspace(tStart, tEnd, int(n + 1))
 
@@ -137,13 +138,19 @@ def graph(tStart, tEnd, interval, name, **kwargs):
         elif y.ndim == 2:
             for row in range(y.shape[0]):
                 if y.shape[1] == n + 1:
-                    plt.plot(x, y[row, :], label="{label}{row}".format(label=label, row=row) , linewidth=1)
+                    #plt.plot(x, y[row, :], label="{label}{row}".format(label=label, row=row) , linewidth=1)
+                    plt.plot(x, y[row, :], linewidth=1)
                 elif y.shape[1] == n:
-                    plt.plot(x[1:], y[row, :], label="{label}{row}".format(label=label, row=row) , linewidth=1)
+                    #plt.plot(x[1:], y[row, :], label="{label}{row}".format(label=label, row=row) , linewidth=1)
+                    plt.plot(x[1:], y[row, :], linewidth=1)
+
     ax.legend()
-    ax.set_title(name)
-    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left')
-    plt.savefig(visFolder + "Graph_{name}.jpg".format(name=name), bbox_inches='tight')
+    ax.set_title(title)
+    plt.xlabel('Time (s)')
+    plt.ylabel(ylabel)
+    if y.ndim == 2:
+        plt.legend(['Boom', 'Arm', 'Bucket'], bbox_to_anchor=(1.04, 1), loc='upper left')
+    plt.savefig(visFolder + "Graph_{title}.jpg".format(title=title), bbox_inches='tight')
     plt.close()
 
 def createVideo(kStart, kEnd, name, fps):
@@ -167,3 +174,22 @@ def createVideo(kStart, kEnd, name, fps):
     # Deallocating memories taken for window creation
     cv2.destroyAllWindows()
     video.release()  # releasing the video generated
+
+def plotMotorOpPt(motorTorque, motorVel):
+    fig, ax = plt.subplots()
+
+    angVel = []
+    torqueLimit = []
+
+    for w in range(0, 472, 1):
+        angVel += [w]
+        torqueLimit += [motorTorqueLimit(w, DutyCycle.S1)]
+
+    ax.plot(angVel, torqueLimit, 'r--', linewidth=1)
+
+    for k in range(3):
+        ax.plot(abs(motorVel[k]), abs(motorTorque[k]), linewidth=1)
+
+    plt.legend(['Torque Limit', 'Boom', 'Arm', 'Bucket'], bbox_to_anchor=(1.04, 1), loc='upper left')
+    plt.savefig(visFolder + "Motor Operating Points.jpg", bbox_inches='tight')
+    plt.close()
