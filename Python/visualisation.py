@@ -1,6 +1,6 @@
 import casadi as csd
 import excavatorConstants as C
-from excavatorModel import DutyCycle, motorTorqueLimit
+from excavatorModel import motorTorqueLimit
 import matplotlib.pyplot as plt
 import os
 import cv2
@@ -25,10 +25,13 @@ def plotExcavator(ax, q, **kwargs):
 
     color = 'default'
     alphaTransparency = 0
+    extF = None
     if 'color' in kwargs.keys():
         color = kwargs['color']
     if 'alpha' in kwargs.keys():
         alphaTransparency = kwargs['alpha']
+    if 'extF' in kwargs.keys():
+        extF = kwargs['extF']
 
     # Boom
     iBA = rotMat(alpha)@C.bBA
@@ -105,14 +108,25 @@ def plotExcavator(ax, q, **kwargs):
         ax.fill(xBoom, yBoom, facecolor='none', edgecolor=color, linewidth=1, alpha=alphaTransparency)
         plt.plot([iBH[0].__float__(), iBK[0].__float__()], [iBH[1].__float__(), iBK[1].__float__()], color=color, linewidth=1, alpha=alphaTransparency)
 
-def visualise(q, qOld, qDes, t, k):
+    # Force
+    if extF is not None:
+        iBCoMBucket = transMat(alpha + beta + gamma, iBL)@csd.vertcat(C.lCoMBucket[0]*0.75, C.lCoMBucket[0]*0.25, 1)
+        iBCoMBucket = iBCoMBucket[0:2]
+        xArrow = 0.5*extF[0]/csd.sqrt(extF[0]**2 + extF[1]**2)
+        yArrow = 0.5*extF[1]/csd.sqrt(extF[0]**2 + extF[1]**2)
+        plt.arrow(iBCoMBucket[0].__float__(), iBCoMBucket[1].__float__(), xArrow, yArrow, fc='k', head_width=0.05)
+
+def visualise(q, qOld, qDes, t, k, extF):
     fig, ax = plt.subplots()
 
     if qOld is not None:
         plotExcavator(ax, qOld, color='k', alpha=0.2)
     if qDes is not None:
         plotExcavator(ax, qDes, color='lime', alpha=0.2)
-    plotExcavator(ax, q)
+    if extF is not None:
+        plotExcavator(ax, q, extF=extF)
+    else:
+        plotExcavator(ax, q)
 
     # Ground
     plt.axhline(y=C.yGround, color='g', linewidth=1)
@@ -123,6 +137,28 @@ def visualise(q, qOld, qDes, t, k):
     ax.set_title("t = {t} s, k = {k}".format(t=t, k=k))
     plt.savefig(visFolder + "Excavator_{y}.jpg".format(y=k))
     plt.close()
+
+def createVideo(kStart, kEnd, name, fps):
+    videoName = visFolder + "{name}.mp4".format(name=name)
+    imgs = []
+
+    k = kStart
+    while "Excavator_{k}.jpg".format(k=k) in os.listdir(visFolder) and k <= kEnd:
+        imgs += ["Excavator_{k}.jpg".format(k=k)]
+        k += 1
+
+    frame = cv2.imread(os.path.join(visFolder, imgs[0]))
+    height, width, layers = frame.shape
+
+    video = cv2.VideoWriter(videoName, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
+
+    # Appending the images to the video one by one
+    for img in imgs:
+        video.write(cv2.imread(os.path.join(visFolder, img)))
+
+    # Deallocating memories taken for window creation
+    cv2.destroyAllWindows()
+    video.release()  # releasing the video generated
 
 def graph(tStart, tEnd, interval, title, ylabel, **kwargs):
     n = (tEnd - tStart)/interval
@@ -153,29 +189,7 @@ def graph(tStart, tEnd, interval, title, ylabel, **kwargs):
     plt.savefig(visFolder + "Graph_{title}.jpg".format(title=title), bbox_inches='tight')
     plt.close()
 
-def createVideo(kStart, kEnd, name, fps):
-    videoName = visFolder + "{name}.mp4".format(name=name)
-    imgs = []
-
-    k = kStart
-    while "Excavator_{k}.jpg".format(k=k) in os.listdir(visFolder) and k <= kEnd:
-        imgs += ["Excavator_{k}.jpg".format(k=k)]
-        k += 1
-
-    frame = cv2.imread(os.path.join(visFolder, imgs[0]))
-    height, width, layers = frame.shape
-
-    video = cv2.VideoWriter(videoName, cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
-
-    # Appending the images to the video one by one
-    for img in imgs:
-        video.write(cv2.imread(os.path.join(visFolder, img)))
-
-    # Deallocating memories taken for window creation
-    cv2.destroyAllWindows()
-    video.release()  # releasing the video generated
-
-def plotMotorOpPt(motorTorque, motorVel):
+def plotMotorOpPt(motorTorque, motorVel, dutyCycle):
     fig, ax = plt.subplots()
 
     angVel = []
@@ -183,13 +197,16 @@ def plotMotorOpPt(motorTorque, motorVel):
 
     for w in range(0, 472, 1):
         angVel += [w]
-        torqueLimit += [motorTorqueLimit(w, DutyCycle.S1)]
+        torqueLimit += [motorTorqueLimit(w, dutyCycle)]
 
     ax.plot(angVel, torqueLimit, 'r--', linewidth=1)
 
     for k in range(3):
         ax.plot(abs(motorVel[k]), abs(motorTorque[k]), linewidth=1)
 
+    ax.set_title("Motor Operating Curves")
+    plt.xlabel('Motor velocity ($\mathsf{rad\ s^{-1}}$)')
+    plt.ylabel('Motor torque (Nm)')
     plt.legend(['Torque Limit', 'Boom', 'Arm', 'Bucket'], bbox_to_anchor=(1.04, 1), loc='upper left')
     plt.savefig(visFolder + "Motor Operating Points.jpg", bbox_inches='tight')
     plt.close()

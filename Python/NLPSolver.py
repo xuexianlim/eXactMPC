@@ -2,10 +2,9 @@ import casadi as csd
 from enum import Enum
 import excavatorConstants as C
 import excavatorModel as mod
-import visualisation as vis
 
-T = 10 # Prediction horizon
-N = 100 # Number of time steps
+T = 5 # Prediction horizon
+N = 50 # Number of time steps
 
 # Changes how the external force behaves
 class Mode(Enum):
@@ -40,24 +39,32 @@ class NLP():
         self.motorPower = self.opti.variable(3, N)
 
         # Objective function weights
-        poseAngleWeight = C.lenLM**2
-        regularisationWeight = 1
+        xWeight = 1
+        yWeight = 1
+        thetaWeight = C.lenLM**2
+        terminalWeight = 1
+        regularisationWeight = 0.01
 
         # Objective function
         L = 0
 
         for k in range(N):
             # Objective function
-            L += (self.poseActual[0, k] - self.poseDesired[0])**2 + (self.poseActual[1, k] - self.poseDesired[1])**2 + poseAngleWeight*(self.poseActual[2, k] - self.poseDesired[2])**2 # Cost due to difference from desired pose
+            L += xWeight*(self.poseActual[0, k] - self.poseDesired[0])**2 + yWeight*(self.poseActual[1, k] - self.poseDesired[1])**2 + thetaWeight*(self.poseActual[2, k] - self.poseDesired[2])**2 # Cost due to difference from desired pose
             L += regularisationWeight*(self.u[0, k]**2 + self.u[1, k]**2 + self.u[2, k]**2) # Regularisation cost
 
             # Constraints
             self.opti.subject_to(self.x[:, k+1] == integrator(self.x[:, k], self.u[:, k])) # System dynamics
             self.opti.subject_to(self.poseActual[:, k] == mod.forwardKinematics(self.x[:, k+1]))
-            self.opti.subject_to(self.extForce[:, k] == csd.vertcat(0, 0))
             self.opti.subject_to(self.motorTorque[:, k] == mod.motorTorque(self.x[0:3, k], self.x[3:6, k], self.u[:, k], self.extForce))
             self.opti.subject_to(self.motorVel[:, k] == mod.motorVel(self.x[0:3, k], self.x[3:6, k]))
             self.opti.subject_to(self.motorPower[:, k] == self.motorTorque[:, k]*self.motorVel[:, k])
+            if mode == Mode.LIFT:
+                self.opti.subject_to(self.extForce[:, k] == csd.vertcat(0, -extF))
+            #elif mode == Mode.DIG:
+                #Not implemented
+            else:
+                self.opti.subject_to(self.extForce[:, k] == csd.vertcat(0, 0))
 
             self.opti.subject_to(self.x[0:3, k+1] <= csd.vertcat(1.0923, -0.5103, 0.7839)) # Angular limits
             self.opti.subject_to(self.x[0:3, k+1] >= csd.vertcat(-0.4737, -2.5848, -2.8659))
@@ -65,16 +72,22 @@ class NLP():
             self.opti.subject_to(self.motorVel[:, k] <= csd.vertcat(471.24, 471.24, 471.24)) # Motor speed
             self.opti.subject_to(self.motorVel[:, k] >= csd.vertcat(-471.24, -471.24, -471.24)) # 4500 RPM
 
-            motorRamp = 100
-            if k != N-1:
-                self.opti.subject_to(self.motorVel[:, k+1] - self.motorVel[:, k] <= csd.vertcat(motorRamp, motorRamp, motorRamp)) # Motor ramp
-                self.opti.subject_to(self.motorVel[:, k+1]- self.motorVel[:, k] >= csd.vertcat(-motorRamp, -motorRamp, -motorRamp))
-            else:
-                self.opti.subject_to(self.motorVel[:, N-1] <= csd.vertcat(47.14, 47.14, 47.14))
-                self.opti.subject_to(self.motorVel[:, N-1] >= csd.vertcat(-47.14, -47.14, -47.14))
-
             self.opti.subject_to(self.motorTorque[:, k] <= mod.motorTorqueLimit(self.motorVel[:, k], dutyCycle)) # Motor torque limits
             self.opti.subject_to(self.motorTorque[:, k] >= -mod.motorTorqueLimit(self.motorVel[:, k], dutyCycle))
+            self.opti.subject_to(self.motorTorque[:, k] <= mod.motorTorqueLimit(-self.motorVel[:, k], dutyCycle))
+            self.opti.subject_to(self.motorTorque[:, k] >= -mod.motorTorqueLimit(-self.motorVel[:, k], dutyCycle))
+
+            motorPower = 8250
+            self.opti.subject_to(self.motorPower[0, k] + self.motorPower[1, k] + self.motorPower[2, k] <= motorPower) # Motor power limits
+            self.opti.subject_to(self.motorPower[0, k] + self.motorPower[1, k] - self.motorPower[2, k] <= motorPower)
+            self.opti.subject_to(self.motorPower[0, k] - self.motorPower[1, k] + self.motorPower[2, k] <= motorPower)
+            self.opti.subject_to(self.motorPower[0, k] - self.motorPower[1, k] - self.motorPower[2, k] <= motorPower)
+            self.opti.subject_to(-self.motorPower[0, k] + self.motorPower[1, k] + self.motorPower[2, k] <= motorPower)
+            self.opti.subject_to(-self.motorPower[0, k] + self.motorPower[1, k] - self.motorPower[2, k] <= motorPower)
+            self.opti.subject_to(-self.motorPower[0, k] - self.motorPower[1, k] + self.motorPower[2, k] <= motorPower)
+            self.opti.subject_to(-self.motorPower[0, k] - self.motorPower[1, k] - self.motorPower[2, k] <= motorPower)
+
+        L += terminalWeight*(self.x[3, N]**2 + self.x[4, N]**2 + self.x[5, N]**2)
 
         self.opti.minimize(L)
 

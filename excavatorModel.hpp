@@ -93,12 +93,6 @@ T inverseDynamics(T q, T qDot, T qDDot, T F)
                                                                       -lenAL * sin(alpha + beta) * (alphaDot + betaDot) - lenLCoMBucket * sin(alpha + beta + gamma + angMLCoMBucket) * (alphaDot + betaDot + gammaDot),
                                                                       -lenLCoMBucket * sin(alpha + beta + gamma + angMLCoMBucket) * (alphaDot + betaDot + gammaDot)})});
     T jacBucketDotRot = horzcat(std::vector<T>{0, 0, 0});
-    T jacTipPos = vertcat(std::vector<T>{horzcat(std::vector<T>{-lenBA * sin(alpha) - lenAL * sin(alpha + beta) - lenLM * sin(alpha + beta + gamma),
-                                                                -lenAL * sin(alpha + beta) - lenLM * sin(alpha + beta + gamma),
-                                                                -lenLM * sin(alpha + beta + gamma)}),
-                                         horzcat(std::vector<T>{lenBA * cos(alpha) + lenAL * cos(alpha + beta) + lenLM * cos(alpha + beta + gamma),
-                                                                lenAL * cos(alpha + beta) + lenLM * cos(alpha + beta + gamma),
-                                                                lenLM * cos(alpha + beta + gamma)})});
 
     T M = mtimes(jacBoomPos.T() * massBoom, jacBoomPos) + mtimes(jacBoomRot.T() * moiBoom, jacBoomRot) +
           mtimes(jacArmPos.T() * massArm, jacArmPos) + mtimes(jacArmRot.T() * moiArm, jacArmRot) +
@@ -107,7 +101,7 @@ T inverseDynamics(T q, T qDot, T qDDot, T F)
           mtimes(jacArmPos.T() * massArm, mtimes(jacArmDotPos, qDot)) + mtimes(jacArmRot.T() * moiArm, mtimes(jacArmDotRot, qDot)) +
           mtimes(jacBucketPos.T() * massBucket, mtimes(jacBucketDotPos, qDot)) + mtimes(jacBucketRot.T() * moiBucket, mtimes(jacBucketDotRot, qDot));
     T g = -mtimes(jacBoomPos.T() * massBoom, gravity) - mtimes(jacArmPos.T() * massArm, gravity) - mtimes(jacBucketPos.T() * massBucket, gravity);
-    T extF = mtimes(jacTipPos.T(), F);
+    T extF = mtimes(jacBucketPos.T(), F);
 
     return mtimes(M, qDDot) + b + g - extF;
 }
@@ -185,11 +179,44 @@ T motorTorque(T q, T qDot, T qDDot, T F)
     T rArm = r(1);
     T rBucket = r(2);
 
-    T torqueMotorBoom = torqueBoom / (2444.16 * rBoom);
-    T torqueMotorArm = torqueArm / (2444.16 * rArm);
-    T torqueMotorBucket = torqueBucket / (2444.16 * rBucket);
+    T torqueMotorBoom = torqueBoom / (2444.16 * rBoom * 0.64);
+    T torqueMotorArm = torqueArm / (2444.16 * rArm * 0.64);
+    T torqueMotorBucket = torqueBucket / (2444.16 * rBucket * 0.64);
 
     return vertcat(std::vector<T>{torqueMotorBoom, torqueMotorArm, torqueMotorBucket});
 }
+
+enum DutyCycle
+{
+    S1,
+    S2_60,
+    S2_30,
+    PEAK
+};
+
+template <typename T>
+T motorTorqueLimit(T motorVel, DutyCycle dutyCycle)
+{
+    switch (dutyCycle)
+    {
+    case S1:
+        return -1.4073e-7 * pow(motorVel, 3) + 1.7961e-5 * pow(motorVel, 2) - 0.0147 * motorVel + 19.9091;
+    case S2_60:
+        return -1.3568e-10 * pow(motorVel, 4) - 1.4682e-7 * pow(motorVel, 3) + 5.5744e-5 * pow(motorVel, 2) - 0.0159 * motorVel + 25.0769;
+    case S2_30:
+        return -2.0433e-7 * pow(motorVel, 3) + 5.1865e-5 * pow(motorVel, 2) - 0.0105 * motorVel + 30.9119;
+    case PEAK:
+        return 4.0269e-9 * pow(motorVel, 4) - 3.7090e-6 * pow(motorVel, 3) + 8.513e-4 * pow(motorVel, 2) - 0.05787 * motorVel + 60.2614;
+    default:
+        return -1.4073e-7 * pow(motorVel, 3) + 1.7961e-5 * pow(motorVel, 2) - 0.0147 * motorVel + 19.9091;
+    }
+}
+
+enum Mode
+{
+    NO_LOAD,
+    LIFT,
+    DIG
+};
 
 #endif

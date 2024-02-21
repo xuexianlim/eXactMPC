@@ -74,13 +74,6 @@ def inverseDynamics(q, qDot, qDDot, F):
                                            -C.lenAL*csd.sin(alpha + beta)*(alphaDot + betaDot) - C.lenLCoMBucket*csd.sin(alpha + beta + gamma + C.angMLCoMBucket)*(alphaDot + betaDot + gammaDot),
                                            -C.lenLCoMBucket*csd.sin(alpha + beta + gamma + C.angMLCoMBucket)*(alphaDot + betaDot + gammaDot)),
                                csd.horzcat(0, 0, 0))
-    jacTip = csd.vertcat(csd.horzcat(-C.lenBA*csd.sin(alpha) - C.lenAL*csd.sin(alpha + beta) - C.lenLM*csd.sin(alpha + beta + gamma),
-                                     -C.lenAL*csd.sin(alpha + beta) - C.lenLM*csd.sin(alpha + beta + gamma),
-                                     -C.lenLM*csd.sin(alpha + beta + gamma)),
-                        csd.horzcat(C.lenBA*csd.cos(alpha) + C.lenAL*csd.cos(alpha + beta) + C.lenLM*csd.cos(alpha + beta + gamma),
-                                    C.lenAL*csd.cos(alpha + beta) + C.lenLM*csd.cos(alpha + beta + gamma),
-                                    C.lenLM*csd.cos(alpha + beta + gamma)),
-                        csd.horzcat(1, 1, 1))
 
     M = (csd.transpose(jacBoom[0:2, :])@C.massBoom@jacBoom[0:2, :] + csd.transpose(jacBoom[2, :])@C.moiBoom@jacBoom[2, :] +
          csd.transpose(jacArm[0:2, :])@C.massArm@jacArm[0:2, :] + csd.transpose(jacArm[2, :])@C.moiArm@jacArm[2, :] +
@@ -91,7 +84,7 @@ def inverseDynamics(q, qDot, qDDot, F):
     g = (-csd.transpose(jacBoom[0:2, :])@C.massBoom@C.g -
          csd.transpose(jacArm[0:2, :])@C.massArm@C.g -
          csd.transpose(jacBucket[0:2, :])@C.massBucket@C.g)
-    extF = csd.transpose(jacTip[0:2, :])@F
+    extF = csd.transpose(jacBucket[0:2, :])@F
 
     return M@qDDot + b + g - extF
 
@@ -100,14 +93,14 @@ def actuatorLen(q):
     beta = q[1]
     gamma = q[2]
 
-    # R = 2*C.lenBC
+    # R = C.lenBC
     # theta = csd.atan2(C.iBC[1], C.iBC[0])
-    # lenBoom = csd.sqrt(-R*C.lenBD*csd.cos(alpha - theta + C.angABD) + C.lenBD**2 + C.lenBC**2)
+    # lenBoom = csd.sqrt(-2*R*C.lenBD*csd.cos(alpha - theta + C.angABD) + C.lenBD**2 + C.lenBC**2)
     lenBoom = 0.0086*alpha**4 - 0.0459*alpha**3 - 0.0104*alpha**2 + 0.2956*alpha + 1.042
 
-    # R = 2*C.lenAE
+    # R = C.lenAE
     # theta = csd.atan2(C.bAE[0], C.bAE[1])
-    # lenArm = csd.sqrt(-R*C.lenAF*csd.sin(beta + theta + C.angFAL) + C.lenAF**2 + C.lenAE**2)
+    # lenArm = csd.sqrt(-2*R*C.lenAF*csd.sin(beta + theta + C.angFAL) + C.lenAF**2 + C.lenAE**2)
     lenArm = 0.0078*beta**4 + 0.0917*beta**3 + 0.2910*beta**2 + 0.0646*beta + 1.0149
 
     lenBucket = 0.0048*gamma**4 + 0.0288*gamma**3 + 0.0225*gamma**2 - 0.1695*gamma + 0.9434
@@ -175,9 +168,9 @@ def motorTorque(q, qDot, qDDot, F):
     rArm = r[1]
     rBucket = r[2]
 
-    TMotorBoom = TBoom/(2444.16*rBoom)
-    TMotorArm = TArm/(2444.16*rArm)
-    TMotorBucket = TBucket/(2444.16*rBucket)
+    TMotorBoom = TBoom/(2444.16*rBoom*0.64)
+    TMotorArm = TArm/(2444.16*rArm*0.64)
+    TMotorBucket = TBucket/(2444.16*rBucket*0.64)
 
     return csd.vertcat(TMotorBoom, TMotorArm, TMotorBucket)
 
@@ -192,7 +185,7 @@ def motorTorqueLimit(motorVel, dutyCycle):
         case DutyCycle.S1:
             return -1.4073e-7*motorVel**3 + 1.7961e-5*motorVel**2 - 0.0147*motorVel + 19.9091
         case DutyCycle.S2_60:
-            return -3.0312e-7*motorVel**3 + 1.1755e-4*motorVel**2 - 0.0255*motorVel + 25.5329
+            return -1.3568e-10*motorVel**4 -1.4682e-7*motorVel**3 + 5.5744e-5*motorVel**2 - 0.0159*motorVel + 25.0769
         case DutyCycle.S2_30:
             return -2.0433e-7*motorVel**3 + 5.1865e-5*motorVel**2 - 0.0105*motorVel + 30.9119
         case DutyCycle.PEAK:
