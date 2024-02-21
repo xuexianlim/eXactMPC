@@ -1,4 +1,7 @@
 # eXactMPC
+
+https://github.com/xuexianlim/eXactMPC
+
 # C++
 This program implements kinematic MPC for the eXact electric excavator arm. Casadi and Ipopt (already included in Casadi) are required for it to run. The installation steps can be found here: https://github.com/casadi/casadi/wiki/InstallationLinux
 
