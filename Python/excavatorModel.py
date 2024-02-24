@@ -2,6 +2,12 @@ import casadi as csd
 from enum import Enum
 import excavatorConstants as C
 
+class DutyCycle(Enum):
+    S1 = 0
+    S2_60 = 1
+    S2_30 = 2
+    PEAK = 3
+
 def forwardKinematics(q):
     alpha = q[0]
     beta = q[1]
@@ -88,6 +94,29 @@ def inverseDynamics(q, qDot, qDDot, F):
 
     return M@qDDot + b + g - extF
 
+def jointAngles(len):
+    lenBoom = len[0]
+    lenArm = len[1]
+    lenBucket = len[2]
+
+    R = C.lenBC
+    theta = csd.atan2(C.iBC[1], C.iBC[0])
+    alpha = csd.acos((-lenBoom**2 + C.lenBD**2 + C.lenBC**2) / (2 * R * C.lenBD)) + theta - C.angABD
+
+    R = C.lenAE
+    theta = csd.atan2(C.bAE[0], C.bAE[1])
+    beta = csd.asin((-lenArm**2 + C.lenAF**2 + C.lenAE**2) / (2 * R * C.lenAF)) - theta - C.angFAL
+
+    R = C.lenJG
+    theta = csd.atan2(C.aJG[0], C.aJG[1])
+    angLJH = csd.asin((-lenBucket**2 + C.lenHJ**2 + C.lenJG**2) / (2 * R * C.lenHJ)) - theta
+
+    R = csd.sqrt((C.lenJL - C.lenHJ * csd.cos(angLJH))**2 + (C.lenHJ * csd.sin(angLJH))**2)
+    theta = csd.atan2(C.lenHJ * csd.sin(angLJH), C.lenJL - C.lenHJ * csd.cos(angLJH))
+    gamma = csd.acos((C.lenHK**2 - C.lenJL**2 - C.lenLK**2 - C.lenHJ**2 + 2 * C.lenJL * C.lenHJ * csd.cos(angLJH)) / (2 * R * C.lenLK)) - theta - C.angKLM
+
+    return csd.vertcat(alpha, beta, gamma)
+
 def actuatorLen(q):
     alpha = q[0]
     beta = q[1]
@@ -173,12 +202,6 @@ def motorTorque(q, qDot, qDDot, F):
     TMotorBucket = TBucket/(2444.16*rBucket*0.64)
 
     return csd.vertcat(TMotorBoom, TMotorArm, TMotorBucket)
-
-class DutyCycle(Enum):
-    S1 = 0
-    S2_60 = 1
-    S2_30 = 2
-    PEAK = 3
 
 def motorTorqueLimit(motorVel, dutyCycle):
     match dutyCycle:

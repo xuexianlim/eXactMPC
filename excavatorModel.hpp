@@ -7,6 +7,21 @@
 
 using namespace casadi;
 
+enum Mode
+{
+    NO_LOAD,
+    LIFT,
+    DIG
+};
+
+enum DutyCycle
+{
+    S1,
+    S2_60,
+    S2_30,
+    PEAK
+};
+
 template <typename T>
 T forwardKinematics(T q)
 {
@@ -107,6 +122,32 @@ T inverseDynamics(T q, T qDot, T qDDot, T F)
 }
 
 template <typename T>
+T jointAngles(T len)
+{
+    T lenBoom = len(0);
+    T lenArm = len(1);
+    T lenBucket = len(2);
+
+    T R = lenBC;
+    T theta = atan2(iBC(1), iBC(0));
+    T alpha = acos((-pow(lenBoom, 2) + pow(lenBD, 2) + pow(lenBC, 2)) / (2 * R * lenBD)) + theta - angABD;
+
+    R = lenAE;
+    theta = atan2(bAE(0), bAE(1));
+    T beta = asin((-pow(lenArm, 2) + pow(lenAF, 2) + pow(lenAE, 2)) / (2 * R * lenAF)) - theta - angFAL;
+
+    R = lenJG;
+    theta = atan2(aJG(0), aJG(1));
+    T angLJH = asin((-pow(lenBucket, 2) + pow(lenHJ, 2) + pow(lenJG, 2)) / (2 * R * lenHJ)) - theta;
+
+    R = sqrt(pow((lenJL - lenHJ * cos(angLJH)), 2) + pow((lenHJ * sin(angLJH)), 2));
+    theta = atan2(lenHJ * sin(angLJH), lenJL - lenHJ * cos(angLJH));
+    T gamma = acos((pow(lenHK, 2) - pow(lenJL, 2) - pow(lenLK, 2) - pow(lenHJ, 2) + 2 * lenJL * lenHJ * cos(angLJH)) / (2 * R * lenLK)) - theta - angKLM;
+
+    return vertcat(std::vector<T>{alpha, beta, gamma});
+}
+
+template <typename T>
 T actuatorLen(T q)
 {
     T alpha = q(0);
@@ -186,14 +227,6 @@ T motorTorque(T q, T qDot, T qDDot, T F)
     return vertcat(std::vector<T>{torqueMotorBoom, torqueMotorArm, torqueMotorBucket});
 }
 
-enum DutyCycle
-{
-    S1,
-    S2_60,
-    S2_30,
-    PEAK
-};
-
 template <typename T>
 T motorTorqueLimit(T motorVel, DutyCycle dutyCycle)
 {
@@ -211,12 +244,5 @@ T motorTorqueLimit(T motorVel, DutyCycle dutyCycle)
         return -1.4073e-7 * pow(motorVel, 3) + 1.7961e-5 * pow(motorVel, 2) - 0.0147 * motorVel + 19.9091;
     }
 }
-
-enum Mode
-{
-    NO_LOAD,
-    LIFT,
-    DIG
-};
 
 #endif

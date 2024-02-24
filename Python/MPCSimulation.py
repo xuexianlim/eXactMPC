@@ -23,9 +23,15 @@ vis.graph(0, T, T/N, "Motor Powers", "Motor power (kW)", motorPower=sol.value(op
 
 for k in range(N + 1):
     if k == 0:
-        vis.visualise(sol.value(opti.x[0:3, k]), None, qDesired, k*T/N, k, sol.value(opti.extForce[:, 0])) # sol.value(opti.extForce[:, 0]
+        if mode == Mode.LIFT:
+            vis.visualise(sol.value(opti.x[0:3, k]), None, qDesired, k*T/N, k, sol.value(opti.extForce[:, 0]))
+        else:
+            vis.visualise(sol.value(opti.x[0:3, k]), None, qDesired, k*T/N, k, None)
     else:
-        vis.visualise(sol.value(opti.x[0:3, k]), None, qDesired, k*T/N, k, sol.value(opti.extForce[:, k-1])) # sol.value(opti.extForce[:, k-1]
+        if mode == Mode.LIFT:
+            vis.visualise(sol.value(opti.x[0:3, k]), None, qDesired, k*T/N, k, sol.value(opti.extForce[:, k-1]))
+        else:
+            vis.visualise(sol.value(opti.x[0:3, k]), None, qDesired, k*T/N, k, None)
     print("Plotting visualisation {k}".format(k=k))
 
 vis.createVideo(0, N, "Excavator", N/T)
