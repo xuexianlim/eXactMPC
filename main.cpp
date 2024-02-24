@@ -6,22 +6,24 @@
 
 using namespace casadi;
 
-float T = 5; // Time horizon
-int N = 50;  // Number of intervals
+float T = 2;      // Time horizon
+int N = 20;       // Number of intervals
+float Ts = T / N; // MPC sampling time
 
 Mode mode = LIFT;
+int extF = 1000;
 DutyCycle dutyCycle = S2_30;
 
 // System dynamics
 template <typename V>
-V integrator(V x, V u)
+V integrator(V x, V u, float t)
 {
-    return vertcat(std::vector<V>{x(0) + x(3) * T / N + 0.5 * u(0) * pow(T / N, 2),
-                                  x(1) + x(4) * T / N + 0.5 * u(1) * pow(T / N, 2),
-                                  x(2) + x(5) * T / N + 0.5 * u(2) * pow(T / N, 2),
-                                  x(3) + u(0) * T / N,
-                                  x(4) + u(1) * T / N,
-                                  x(5) + u(2) * T / N});
+    return vertcat(std::vector<V>{x(0) + x(3) * t + 0.5 * u(0) * pow(t, 2),
+                                  x(1) + x(4) * t + 0.5 * u(1) * pow(t, 2),
+                                  x(2) + x(5) * t + 0.5 * u(2) * pow(t, 2),
+                                  x(3) + u(0) * t,
+                                  x(4) + u(1) * t,
+                                  x(5) + u(2) * t});
 }
 
 int main()
@@ -45,7 +47,7 @@ int main()
     DM qInitial = vertcat(DMVector{1, -2.2, -1.8});
     DM poseDesiredValue = vertcat(DMVector{3.37533, -0.897229, -0.4});
     DM qDesired = inverseKinematics(poseDesiredValue);
-    DM extForce = 500;
+    DM extForce = extF;
 
     opti.set_value(poseDesired, poseDesiredValue);            // Desired pose
     opti.set_value(x0, vertcat(DMVector{qInitial, 0, 0, 0})); // Initial state
@@ -75,11 +77,14 @@ int main()
         L = L + regularisationWeight * (pow(u(0, k), 2) + pow(u(1, k), 2) + pow(u(2, k), 2));
 
         // System dynamics
-        opti.subject_to(x(all, k + 1) == integrator(static_cast<MX>(x(all, k)), static_cast<MX>(u(all, k))));
+        opti.subject_to(x(all, k + 1) == integrator(static_cast<MX>(x(all, k)), static_cast<MX>(u(all, k)), Ts));
         opti.subject_to(__motorVel__(all, k) == motorVel(static_cast<MX>(x(Slice(0, 3), k)), static_cast<MX>(x(Slice(3, 6), k))));
-        if (mode == LIFT) {
+        if (mode == LIFT)
+        {
             opti.subject_to(__motorTorque__(all, k) == motorTorque(static_cast<MX>(x(Slice(0, 3), k)), static_cast<MX>(x(Slice(3, 6), k)), static_cast<MX>(u(all, k)), vertcat(MXVector{0, -extForce})));
-        } else {
+        }
+        else
+        {
             opti.subject_to(__motorTorque__(all, k) == motorTorque(static_cast<MX>(x(Slice(0, 3), k)), static_cast<MX>(x(Slice(3, 6), k)), static_cast<MX>(u(all, k)), vertcat(MXVector{0, 0})));
         }
         opti.subject_to(__motorPower__(all, k) == __motorTorque__(all, k) * __motorVel__(all, k));
@@ -99,14 +104,14 @@ int main()
         opti.subject_to(__motorTorque__(all, k) >= -motorTorqueLimit(static_cast<MX>(-__motorVel__(all, k)), dutyCycle));
 
         // Motor power constraints
-        opti.subject_to(__motorPower__(0, k) + __motorPower__(1, k) +  __motorPower__(2, k) <= 8250);
-        opti.subject_to(__motorPower__(0, k) + __motorPower__(1, k) -  __motorPower__(2, k) <= 8250);
-        opti.subject_to(__motorPower__(0, k) - __motorPower__(1, k) +  __motorPower__(2, k) <= 8250);
-        opti.subject_to(__motorPower__(0, k) - __motorPower__(1, k) -  __motorPower__(2, k) <= 8250);
-        opti.subject_to(-__motorPower__(0, k) + __motorPower__(1, k) +  __motorPower__(2, k) <= 8250);
-        opti.subject_to(-__motorPower__(0, k) + __motorPower__(1, k) -  __motorPower__(2, k) <= 8250);
-        opti.subject_to(-__motorPower__(0, k) - __motorPower__(1, k) +  __motorPower__(2, k) <= 8250);
-        opti.subject_to(-__motorPower__(0, k) - __motorPower__(1, k) -  __motorPower__(2, k) <= 8250);
+        opti.subject_to(__motorPower__(0, k) + __motorPower__(1, k) + __motorPower__(2, k) <= 8250);
+        opti.subject_to(__motorPower__(0, k) + __motorPower__(1, k) - __motorPower__(2, k) <= 8250);
+        opti.subject_to(__motorPower__(0, k) - __motorPower__(1, k) + __motorPower__(2, k) <= 8250);
+        opti.subject_to(__motorPower__(0, k) - __motorPower__(1, k) - __motorPower__(2, k) <= 8250);
+        opti.subject_to(-__motorPower__(0, k) + __motorPower__(1, k) + __motorPower__(2, k) <= 8250);
+        opti.subject_to(-__motorPower__(0, k) + __motorPower__(1, k) - __motorPower__(2, k) <= 8250);
+        opti.subject_to(-__motorPower__(0, k) - __motorPower__(1, k) + __motorPower__(2, k) <= 8250);
+        opti.subject_to(-__motorPower__(0, k) - __motorPower__(1, k) - __motorPower__(2, k) <= 8250);
     }
 
     // Terminal cost
@@ -119,6 +124,14 @@ int main()
     opti.solver("ipopt");
     OptiSol sol = opti.solve();
 
-    // std::cout << sol.value(x) << std::endl;
-    // std::cout << sol.value(u) << std::endl;
+    float TMotor = 0.001;     // Motor velocity command time interval
+    int NMotor = Ts / TMotor; // Number of motor velocity commands per MPC time step
+
+    for (int i = 0; i < NMotor; i++)
+    {
+        DM xInterpolate = integrator(sol.value(x(all, 0)), sol.value(u(all, 0)), (i + 1) * TMotor);
+        DM motorSpd = motorVel(static_cast<DM>(xInterpolate(Slice(0, 3))), static_cast<DM>((xInterpolate(Slice(0, 3)))));
+
+        std::cout << motorSpd << std::endl; // Motor velocity commands every TMotor seconds
+    }
 }

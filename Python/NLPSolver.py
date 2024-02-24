@@ -3,8 +3,9 @@ from enum import Enum
 import excavatorConstants as C
 import excavatorModel as mod
 
-T = 5 # Prediction horizon
-N = 50 # Number of time steps
+T = 2 # Prediction horizon
+N = 20 # Number of time steps
+Ts = T/N # Sampling time
 
 # Changes how the external force behaves
 class Mode(Enum):
@@ -12,13 +13,13 @@ class Mode(Enum):
     LIFT = 1 # External load in the bucket exerts a downward force due to gravity always
     DIG = 2 # Resistive force acts against the direction of the velocity of the bucket
 
-def integrator(x, u):
-    return csd.vertcat(x[0] + x[3]*T/N + 0.5*u[0]*(T/N)**2,
-                       x[1] + x[4]*T/N + 0.5*u[1]*(T/N)**2,
-                       x[2] + x[5]*T/N + 0.5*u[2]*(T/N)**2,
-                       x[3] + u[0]*T/N,
-                       x[4] + u[1]*T/N,
-                       x[5] + u[2]*T/N)
+def integrator(x, u, t):
+    return csd.vertcat(x[0] + x[3]*t + 0.5*u[0]*(t)**2,
+                       x[1] + x[4]*t + 0.5*u[1]*(t)**2,
+                       x[2] + x[5]*t + 0.5*u[2]*(t)**2,
+                       x[3] + u[0]*t,
+                       x[4] + u[1]*t,
+                       x[5] + u[2]*t)
 
 class NLP():
     def __init__(self, mode, extF, dutyCycle):
@@ -54,7 +55,7 @@ class NLP():
             L += regularisationWeight*(self.u[0, k]**2 + self.u[1, k]**2 + self.u[2, k]**2) # Regularisation cost
 
             # Constraints
-            self.opti.subject_to(self.x[:, k+1] == integrator(self.x[:, k], self.u[:, k])) # System dynamics
+            self.opti.subject_to(self.x[:, k+1] == integrator(self.x[:, k], self.u[:, k], Ts)) # System dynamics
             self.opti.subject_to(self.poseActual[:, k] == mod.forwardKinematics(self.x[:, k+1]))
             self.opti.subject_to(self.motorTorque[:, k] == mod.motorTorque(self.x[0:3, k], self.x[3:6, k], self.u[:, k], self.extForce))
             self.opti.subject_to(self.motorVel[:, k] == mod.motorVel(self.x[0:3, k], self.x[3:6, k]))
@@ -108,10 +109,12 @@ class NLP():
 
         # Options
         opts={}
-        # opts["verbose_init"] = False
-        # opts["verbose"] = False
-        # opts["print_time"] = False
-        # opts["ipopt.print_level"] = 0
+
+        # Comment out this block to see Ipopt solver printouts
+        opts["verbose_init"] = False
+        opts["verbose"] = False
+        opts["print_time"] = False
+        opts["ipopt.print_level"] = 0
 
         self.opti.solver('ipopt', opts)
         sol = self.opti.solve()

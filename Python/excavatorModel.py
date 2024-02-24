@@ -117,6 +117,20 @@ def jointAngles(len):
 
     return csd.vertcat(alpha, beta, gamma)
 
+def jointVel(q, actuatorVel):
+    alpha = q[0]
+    beta = q[1]
+    gamma = q[2]
+    lenBoomDot = actuatorVel[0]
+    lenArmDot = actuatorVel[1]
+    lenBucketDot = actuatorVel[2]
+
+    alphaDot = lenBoomDot/(0.0344*alpha**3 - 0.1377*alpha**2 - 0.0208*alpha + 0.2956)
+    betaDot = lenArmDot/(0.0312*beta**3 + 0.2751*beta**2 + 0.582*beta + 0.0646)
+    gammaDot = lenBucketDot/(0.0192*gamma**3 + 0.0864*gamma**2 + 0.045*gamma - 0.1695)
+
+    return csd.vertcat(alphaDot, betaDot, gammaDot)
+
 def actuatorLen(q):
     alpha = q[0]
     beta = q[1]

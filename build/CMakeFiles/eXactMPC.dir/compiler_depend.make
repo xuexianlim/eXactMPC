@@ -479,6 +479,7 @@ CMakeFiles/eXactMPC.dir/main.cpp.o: ../main.cpp \
 
 CMakeFiles/eXactMPC.dir/utils.cpp.o: ../utils.cpp \
   /usr/include/stdc-predef.h \
+  ../utils.hpp \
   /usr/local/include/casadi/casadi.hpp \
   /usr/local/include/casadi/core/core.hpp \
   /usr/local/include/casadi/core/sx_elem.hpp \
@@ -948,8 +949,7 @@ CMakeFiles/eXactMPC.dir/utils.cpp.o: ../utils.cpp \
   /usr/include/c++/11/backward/auto_ptr.h \
   /usr/include/c++/11/bits/ranges_uninitialized.h \
   /usr/include/c++/11/bits/uses_allocator_args.h \
-  /usr/include/c++/11/pstl/glue_memory_defs.h \
-  ../utils.hpp
+  /usr/include/c++/11/pstl/glue_memory_defs.h
 
 
 ../excavatorConstants.hpp:

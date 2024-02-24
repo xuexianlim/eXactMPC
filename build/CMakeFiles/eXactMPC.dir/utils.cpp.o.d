@@ -1,5 +1,6 @@
 CMakeFiles/eXactMPC.dir/utils.cpp.o: \
  /home/xuexianlim/Desktop/eXactMPC/utils.cpp /usr/include/stdc-predef.h \
+ /home/xuexianlim/Desktop/eXactMPC/utils.hpp \
  /usr/local/include/casadi/casadi.hpp \
  /usr/local/include/casadi/core/core.hpp \
  /usr/local/include/casadi/core/sx_elem.hpp \
@@ -402,5 +403,4 @@ CMakeFiles/eXactMPC.dir/utils.cpp.o: \
  /usr/include/c++/11/backward/auto_ptr.h \
  /usr/include/c++/11/bits/ranges_uninitialized.h \
  /usr/include/c++/11/bits/uses_allocator_args.h \
- /usr/include/c++/11/pstl/glue_memory_defs.h \
- /home/xuexianlim/Desktop/eXactMPC/utils.hpp
+ /usr/include/c++/11/pstl/glue_memory_defs.h

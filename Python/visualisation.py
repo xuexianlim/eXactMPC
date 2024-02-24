@@ -134,7 +134,7 @@ def visualise(q, qOld, qDes, t, k, extF):
     plt.xlim([-1, 4])
     plt.ylim([-2, 3])
     ax.set_aspect('equal')
-    ax.set_title("t = {t} s, k = {k}".format(t=t, k=k))
+    ax.set_title("t = {t} s, k = {k}".format(t=round(t, 1), k=k))
     plt.savefig(visFolder + "Excavator_{y}.jpg".format(y=k))
     plt.close()
 
