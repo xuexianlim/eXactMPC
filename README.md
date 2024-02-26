@@ -20,7 +20,7 @@ $ ./eXactMPC
 It prints the motor velocity commands for a single MPC time step.
 
 # Python
-This program runs a simulation of the excavator arm using the controller. It therefore solves the optimisation problem each time step and calculates the excavator arm response before repeating the process. It therefore takes a while longer to finish outputting the visualisation plots.
+This program runs a simulation of the excavator arm using the controller. It solves the optimisation problem each time step and calculates the excavator arm response before repeating the process. It therefore takes a while longer to finish outputting the visualisation plots.
 
 The file to run is `MPCSimulation.py`. At least Python 3.10 is required to run the program due to the presence of match-case syntax.
 
